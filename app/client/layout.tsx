@@ -4,7 +4,7 @@ import { cookies } from 'next/headers'
 import ClientSidebar from '@/components/client/Sidebar'
 
 export default async function ClientLayout({ children }) {
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
