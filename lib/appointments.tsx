@@ -3,9 +3,11 @@ import supabase from './supabaseClient'
 export interface AppointmentFilters {
   status?: string
   year?: number | string
+  [key: string]: any
 }
 
 // Get all appointments (admin)
+// Fix: Added explicit AppointmentFilters typing to resolve Vercel build error
 export async function getAllAppointments(filters: AppointmentFilters = {}) {
   let query = supabase
     .from('appointments')
@@ -21,7 +23,7 @@ export async function getAllAppointments(filters: AppointmentFilters = {}) {
 }
 
 // Get appointments for a specific user (client)
-export async function getMyAppointments(userId: string) {
+export async function getMyAppointments(userId) {
   const { data, error } = await supabase
     .from('appointments')
     .select('*')
@@ -32,7 +34,7 @@ export async function getMyAppointments(userId: string) {
 }
 
 // Create a new appointment
-export async function createAppointment(payload: any) {
+export async function createAppointment(payload) {
   const { data, error } = await supabase
     .from('appointments')
     .insert(payload)
@@ -43,7 +45,7 @@ export async function createAppointment(payload: any) {
 }
 
 // Update an appointment
-export async function updateAppointment(id: number | string, updates: any) {
+export async function updateAppointment(id, updates) {
   const { data, error } = await supabase
     .from('appointments')
     .update({ ...updates, updated_at: new Date().toISOString() })
@@ -55,7 +57,7 @@ export async function updateAppointment(id: number | string, updates: any) {
 }
 
 // Delete an appointment
-export async function deleteAppointment(id: number | string) {
+export async function deleteAppointment(id) {
   const { error } = await supabase
     .from('appointments')
     .delete()
@@ -107,7 +109,7 @@ export async function getCalendarEvents() {
 }
 
 // Check if user has active appointment (pending/assigned)
-export async function getActiveAppointment(userId: string) {
+export async function getActiveAppointment(userId) {
   const { data, error } = await supabase
     .from('appointments')
     .select('*')
@@ -119,7 +121,7 @@ export async function getActiveAppointment(userId: string) {
 }
 
 // Get queue position for a pending appointment
-export async function getQueuePosition(appointmentId: number | string, createdAt: string) {
+export async function getQueuePosition(appointmentId, createdAt) {
   const { count, error } = await supabase
     .from('appointments')
     .select('id', { count: 'exact' })

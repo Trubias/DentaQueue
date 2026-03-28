@@ -12,11 +12,11 @@
     "@supabase/ssr": "^0.9.0",
     "@supabase/supabase-js": "^2.99.1",
     "date-fns": "^3.6.0",
-    "next": "14.2.29",
+    "next": "^15.5.14",
     "nodemailer": "^6.9.14",
-    "react": "^18",
+    "react": "^18.3.1",
     "react-big-calendar": "^1.11.5",
-    "react-dom": "^18",
+    "react-dom": "^18.3.1",
     "react-hot-toast": "^2.4.1",
     "recharts": "^2.12.7"
   },
@@ -24,7 +24,7 @@
     "@types/node": "^25.5.0",
     "@types/react": "^19.2.14",
     "eslint": "^8",
-    "eslint-config-next": "14.2.29",
+    "eslint-config-next": "^15.5.14",
     "sass": "^1.98.0",
     "typescript": "^5.9.3"
   }

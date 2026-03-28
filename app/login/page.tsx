@@ -14,8 +14,11 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
+
+    const email = form.email.toLowerCase().trim()
+
     const { data, error } = await supabase.auth.signInWithPassword({
-      email: form.email,
+      email,
       password: form.password,
     })
     if (error) {
@@ -24,58 +27,34 @@ export default function LoginPage() {
       return
     }
 
-    const { data: profileCheck } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('id')
+      .select('role')
       .eq('id', data.user.id)
-      .maybeSingle()
+      .single()
 
-    const { data: patientCheck } = await supabase
-      .from('patients')
-      .select('id')
-      .eq('id', data.user.id)
-      .maybeSingle()
-
-    if (!profileCheck && !patientCheck) {
+    if (profileError || !profile) {
       await supabase.auth.signOut()
       toast.error('Account no longer exists. Please contact the admin.')
       setLoading(false)
       return
     }
 
-    let role = 'client'
-
-    // Attempt 1: Get role from user metadata (works if set during auth creation)
-    if (data.user.user_metadata?.role) {
-      role = data.user.user_metadata.role
-    }
-
-    // Attempt 2: Fetch from profiles (now works because RLS allows self-read)
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', data.user.id)
-      .single()
-
-    if (profile?.role) {
-      role = profile.role
-    }
+    const role = profile.role || 'client'
 
     // Force a full router refresh to ensure layouts get the new session cookie
     router.refresh()
 
-    // Instead of using router.push, we use window.location.href 
-    // to bypass Next.js client-side caches that hold onto the old session state
     if (role === 'admin') {
-      if (data.user.email !== 'admin@gmail.com') {
+      if (email !== 'admin@gmail.com') {
         await supabase.auth.signOut()
         toast.error('Access denied. Admins only.')
         setLoading(false)
         return
       }
-      window.location.href = '/admin/dashboard'
-    } else {
-      window.location.href = '/client/dashboard'
+      router.push('/admin/dashboard')
+    } else if (role === 'client') {
+      router.push('/client/dashboard')
     }
   }
 

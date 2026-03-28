@@ -64,12 +64,12 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+        <div className="dashboard-bottom-grid">
           {/* Upcoming */}
           <div className="card">
             <div className="card-header">
               <h3>📅 Upcoming Appointments</h3>
-              <Link href="/admin/schedule" className="btn btn-outline btn-sm">View Schedule</Link>
+              <Link href="/admin/schedule" className="btn btn-outline">View Schedule</Link>
             </div>
             <div className="card-body" style={{ padding: 0 }}>
               {loading ? <div style={{ padding: '1.5rem', color: 'var(--text-muted)' }}>Loading…</div>
@@ -95,7 +95,7 @@ export default function AdminDashboard() {
           <div className="card">
             <div className="card-header">
               <h3>🪑 Pending Queue</h3>
-              <Link href="/admin/queue" className="btn btn-primary btn-sm">Manage Queue</Link>
+              <Link href="/admin/queue" className="btn btn-primary">Manage Queue</Link>
             </div>
             <div className="card-body" style={{ padding: 0 }}>
               {loading ? <div style={{ padding: '1.5rem', color: 'var(--text-muted)' }}>Loading…</div>
