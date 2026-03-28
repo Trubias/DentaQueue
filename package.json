@@ -2,6 +2,9 @@
   "name": "dentaqueue",
   "version": "1.0.0",
   "private": true,
+  "engines": {
+    "node": ">=20.9.0"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -24,7 +27,7 @@
     "@types/node": "^25.5.0",
     "@types/react": "^19.2.14",
     "eslint": "^8",
-    "eslint-config-next": "14.2.29",
+    "eslint-config-next": "^16.2.1",
     "sass": "^1.98.0",
     "typescript": "^5.9.3"
   }
