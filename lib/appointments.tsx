@@ -1,7 +1,13 @@
 import supabase from './supabaseClient'
 
+export interface AppointmentFilters {
+  status?: string
+  year?: number | string
+  [key: string]: any
+}
+
 // Get all appointments (admin)
-export async function getAllAppointments(filters = {}) {
+export async function getAllAppointments(filters: AppointmentFilters = {}) {
   let query = supabase
     .from('appointments')
     .select('*, profiles(name, email, uid)')
