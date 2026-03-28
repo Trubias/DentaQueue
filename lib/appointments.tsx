@@ -1,7 +1,12 @@
 import supabase from './supabaseClient'
 
+export interface AppointmentFilters {
+  status?: string
+  year?: number | string
+}
+
 // Get all appointments (admin)
-export async function getAllAppointments(filters = {}) {
+export async function getAllAppointments(filters: AppointmentFilters = {}) {
   let query = supabase
     .from('appointments')
     .select('*, profiles(name, email, uid)')
@@ -16,7 +21,7 @@ export async function getAllAppointments(filters = {}) {
 }
 
 // Get appointments for a specific user (client)
-export async function getMyAppointments(userId) {
+export async function getMyAppointments(userId: string) {
   const { data, error } = await supabase
     .from('appointments')
     .select('*')
@@ -27,7 +32,7 @@ export async function getMyAppointments(userId) {
 }
 
 // Create a new appointment
-export async function createAppointment(payload) {
+export async function createAppointment(payload: any) {
   const { data, error } = await supabase
     .from('appointments')
     .insert(payload)
@@ -38,7 +43,7 @@ export async function createAppointment(payload) {
 }
 
 // Update an appointment
-export async function updateAppointment(id, updates) {
+export async function updateAppointment(id: number | string, updates: any) {
   const { data, error } = await supabase
     .from('appointments')
     .update({ ...updates, updated_at: new Date().toISOString() })
@@ -50,7 +55,7 @@ export async function updateAppointment(id, updates) {
 }
 
 // Delete an appointment
-export async function deleteAppointment(id) {
+export async function deleteAppointment(id: number | string) {
   const { error } = await supabase
     .from('appointments')
     .delete()
@@ -102,7 +107,7 @@ export async function getCalendarEvents() {
 }
 
 // Check if user has active appointment (pending/assigned)
-export async function getActiveAppointment(userId) {
+export async function getActiveAppointment(userId: string) {
   const { data, error } = await supabase
     .from('appointments')
     .select('*')
@@ -114,7 +119,7 @@ export async function getActiveAppointment(userId) {
 }
 
 // Get queue position for a pending appointment
-export async function getQueuePosition(appointmentId, createdAt) {
+export async function getQueuePosition(appointmentId: number | string, createdAt: string) {
   const { count, error } = await supabase
     .from('appointments')
     .select('id', { count: 'exact' })
