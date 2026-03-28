@@ -7,6 +7,7 @@ export interface AppointmentFilters {
 }
 
 // Get all appointments (admin)
+// Fix: Added explicit AppointmentFilters typing to resolve Vercel build error
 export async function getAllAppointments(filters: AppointmentFilters = {}) {
   let query = supabase
     .from('appointments')
