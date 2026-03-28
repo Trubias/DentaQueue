@@ -224,19 +224,19 @@ export default function AdminAnnouncementsPage() {
     <>
       <div className="topbar">
         <h2>📢 Announcements</h2>
-        <div className="actions-row">
-          <button className="btn btn-outline btn-sm" onClick={() => setShowMailTest(true)}>📧 Send Mail</button>
-          <button className="btn btn-primary btn-sm" onClick={() => setShowCreate(true)}>+ Create</button>
+        <div className="announcements-header">
+          <button className="btn btn-outline" onClick={() => setShowMailTest(true)}>📧 Send Mail</button>
+          <button className="btn btn-primary" onClick={() => setShowCreate(true)}>+ Create</button>
         </div>
       </div>
       <div className="page-body">
-        <div style={{ display: 'flex', gap: '.5rem', marginBottom: '1rem' }}>
+        <div style={{ display: 'flex', gap: '.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
           <button
-            className={`btn btn-sm ${view === 'unsent' ? 'btn-primary' : 'btn-outline'}`}
+            className={`btn ${view === 'unsent' ? 'btn-primary' : 'btn-outline'}`}
             onClick={() => setView('unsent')}
           >📋 Pending</button>
           <button
-            className={`btn btn-sm ${view === 'inventory' ? 'btn-primary' : 'btn-outline'}`}
+            className={`btn ${view === 'inventory' ? 'btn-primary' : 'btn-outline'}`}
             onClick={() => setView('inventory')}
           >📁 Sent Inventory</button>
         </div>
@@ -248,31 +248,51 @@ export default function AdminAnnouncementsPage() {
                 ? <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>Loading…</div>
                 : items.length === 0
                   ? <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>No pending announcements.</div>
-                  : <table>
-                    <thead><tr><th>Title</th><th>Recipient</th><th>Created</th><th>Actions</th></tr></thead>
-                    <tbody>
-                      {items.map(a => (
-                        <tr key={a.id}>
-                          <td>
-                            <strong>{a.title}</strong>
-                            <div style={{ fontSize: '.8rem', color: 'var(--text-muted)' }}>{a.body?.substring(0, 60)}…</div>
-                          </td>
-                          <td>
-                            {a.profiles
-                              ? <>{a.profiles.name} <small style={{ color: 'var(--text-muted)' }}>{a.profiles.uid}</small></>
-                              : <span style={{ color: 'var(--text-muted)' }}>📡 Broadcast (All Users)</span>}
-                          </td>
-                          <td style={{ fontSize: '.8rem' }}>{new Date(a.created_at).toLocaleDateString()}</td>
-                          <td>
-                            <div className="actions-row">
-                              <button className="btn btn-success btn-sm" onClick={() => handleMarkSent(a)}>📤 Send</button>
-                              <button className="btn btn-danger btn-sm" onClick={() => handleDelete(a.id)}>🗑</button>
+                  : <>
+                      <table className="announcements-table">
+                        <thead><tr><th>Title</th><th>Recipient</th><th>Created</th><th>Actions</th></tr></thead>
+                        <tbody>
+                          {items.map(a => (
+                            <tr key={a.id}>
+                              <td>
+                                <strong>{a.title}</strong>
+                                <div style={{ fontSize: '.8rem', color: 'var(--text-muted)' }}>{a.body?.substring(0, 60)}…</div>
+                              </td>
+                              <td>
+                                {a.profiles
+                                  ? <>{a.profiles.name} <small style={{ color: 'var(--text-muted)' }}>{a.profiles.uid}</small></>
+                                  : <span style={{ color: 'var(--text-muted)' }}>📡 Broadcast (All Users)</span>}
+                              </td>
+                              <td style={{ fontSize: '.8rem' }}>{new Date(a.created_at).toLocaleDateString()}</td>
+                              <td>
+                                <div className="actions-row">
+                                  <button className="btn btn-success btn-sm" onClick={() => handleMarkSent(a)}>📤 Send</button>
+                                  <button className="btn btn-danger btn-sm" onClick={() => handleDelete(a.id)}>🗑</button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                      <div className="announcement-card-list">
+                        {items.map(a => (
+                          <div key={a.id} className="announcement-card">
+                            <div className="card-title">{a.title}</div>
+                            <div className="card-meta">
+                              {a.profiles
+                                ? <>{a.profiles.name} ({a.profiles.uid})</>
+                                : <>📡 Broadcast (All Users)</>}
+                              <br/>
+                              {new Date(a.created_at).toLocaleDateString()}
                             </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                            <div className="card-actions">
+                              <button className="btn btn-success" onClick={() => handleMarkSent(a)}>📤</button>
+                              <button className="btn btn-danger" onClick={() => handleDelete(a.id)}>🗑</button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </>
               }
             </div>
           </div>
@@ -288,7 +308,7 @@ export default function AdminAnnouncementsPage() {
                   <div key={year} className="card" style={{ marginBottom: '1.25rem' }}>
                     <div className="card-header"><h3>📁 {year}</h3></div>
                     <div className="card-body" style={{ padding: 0 }}>
-                      <table>
+                      <table className="announcements-table">
                         <thead><tr><th>Title</th><th>Recipient</th><th>Sent At</th><th>Actions</th></tr></thead>
                         <tbody>
                           {inventory[Number(year)].map(a => (
@@ -301,6 +321,21 @@ export default function AdminAnnouncementsPage() {
                           ))}
                         </tbody>
                       </table>
+                      <div className="announcement-card-list">
+                        {inventory[Number(year)].map(a => (
+                          <div key={a.id} className="announcement-card">
+                            <div className="card-title">{a.title}</div>
+                            <div className="card-meta">
+                              {a.profiles?.name ?? <>📡 Broadcast</>}
+                              <br/>
+                              {new Date(a.sent_at!).toLocaleString()}
+                            </div>
+                            <div className="card-actions">
+                              <button className="btn btn-danger" onClick={() => handleDelete(a.id)}>🗑</button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 ))
