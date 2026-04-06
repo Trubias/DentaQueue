@@ -12,13 +12,15 @@
     "@supabase/ssr": "^0.9.0",
     "@supabase/supabase-js": "^2.99.1",
     "date-fns": "^3.6.0",
+    "dotenv": "^17.4.1",
     "next": "^15.5.14",
     "nodemailer": "^6.9.14",
     "react": "^18.3.1",
     "react-big-calendar": "^1.11.5",
     "react-dom": "^18.3.1",
     "react-hot-toast": "^2.4.1",
-    "recharts": "^2.12.7"
+    "recharts": "^2.12.7",
+    "resend": "^6.10.0"
   },
   "devDependencies": {
     "@types/node": "^25.5.0",

@@ -32,7 +32,7 @@ export default function ClientSidebar({ profile, unreadCount = 0 }: any) {
     <>
       <button className="hamburger-btn" onClick={() => setIsOpen(true)}>☰</button>
       <div className={`sidebar-overlay ${isOpen ? 'open' : ''}`} onClick={() => setIsOpen(false)} />
-      
+
       <aside className={`sidebar ${isOpen ? 'sidebar--open' : ''}`}>
         <div className="sidebar-brand">
           <div className="brand-icon" style={{ fontSize: '1.3rem' }}>🦷</div>

@@ -33,55 +33,44 @@ export default function RegisterPage() {
 
     setLoading(true)
 
-    const { data, error } = await supabase.auth.signUp({
-      email: form.email.trim(),
-      password: form.password,
-      options: {
-        data: {
-          name: form.name.trim(),
-          age: form.age,           // will be cast to integer in trigger
-          sex: form.sex,
-          role: 'client'
-        },
-        emailRedirectTo: `${window.location.origin}/login`  // optional – better verification redirect
-      }
+    const emailStr = form.email.trim()
+
+    const { data: existing } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('email', emailStr)
+      .maybeSingle()
+
+    if (existing) {
+      toast.error('Account already exists. Please login.')
+      setLoading(false)
+      return
+    }
+
+    // Store data for the verification step
+    sessionStorage.setItem('pendingVerifyEmail', emailStr)
+    sessionStorage.setItem('pendingUserData', JSON.stringify({
+      fullName: form.name.trim(),
+      age: form.age,
+      sex: form.sex,
+      password: form.password
+    }))
+
+    // Send our custom 8-digit OTP via nodemailer
+    const sendOtpRes = await fetch('/api/send-otp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: emailStr })
     })
 
-    if (error) {
-      toast.error(error.message || 'Failed to create account. Try again.')
-      console.error(error)
-    } else if (data.user?.identities?.length === 0) {
-      // This usually means email already exists
-      toast.error('This email is already registered.')
-    } else {
-      if (data.user?.id) {
-        const generatedUid = `DQ-${data.user.id.substring(0, 6).toUpperCase()}`
-
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert({
-            id: data.user.id,
-            name: form.name.trim(),
-            email: form.email.trim(),
-            uid: generatedUid
-          })
-        if (profileError) console.error('Error inserting profile:', profileError)
-
-        const { error: patientError } = await supabase
-          .from('patients')
-          .insert({
-            id: data.user.id,
-            full_name: form.name.trim(),
-            age: Number(form.age),
-            sex: form.sex,
-            role: 'client'
-          })
-        if (patientError) console.error('Error inserting patient:', patientError)
-      }
-
-      toast.success('Account created! Check your email to verify, then log in.')
-      router.push('/login')
+    if (!sendOtpRes.ok) {
+      toast.error('Failed to send verification email. Please try again.')
+      setLoading(false)
+      return
     }
+
+    toast.success('Verification code sent! Please check your email.')
+    router.push('/verify-email')
 
     setLoading(false)
   }
