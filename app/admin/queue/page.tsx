@@ -251,8 +251,35 @@ export default function AdminQueuePage() {
                 <label className="form-label">Schedule Date & Time</label>
                 <input
                   type="datetime-local" className="form-control"
-                  value={scheduledAt} onChange={e => setScheduledAt(e.target.value)}
-                  required min={new Date().toISOString().slice(0, 16)}
+                  value={scheduledAt}
+                  onChange={(e) => {
+                    const newVal = e.target.value;
+                    if (!newVal) {
+                      setScheduledAt('');
+                      return;
+                    }
+                    if (scheduledAt) {
+                      const oldDatePart = scheduledAt.split('T')[0];
+                      const newDatePart = newVal.split('T')[0];
+                      const oldTimePart = scheduledAt.split('T')[1];
+                      const newTimePart = newVal.split('T')[1];
+                      
+                      const tzOffset = new Date().getTimezoneOffset() * 60000;
+                      const nowLocalStr = new Date(Date.now() - tzOffset).toISOString().slice(0, 16);
+                      const currentTodayDatePart = nowLocalStr.split('T')[0];
+
+                      // 1. Did the native picker date shift to 'Today'? 
+                      // 2. Did the time remain identical? (Which means Chrome's 'Today' button bypassed touching the time)
+                      // If so, aggressively override to live current system time.
+                      if (newDatePart === currentTodayDatePart && oldDatePart !== currentTodayDatePart && oldTimePart === newTimePart) {
+                         setScheduledAt(nowLocalStr);
+                         return;
+                      }
+                    }
+                    setScheduledAt(newVal);
+                  }}
+                  required
+                  min={new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0] + 'T00:00'}
                 />
               </div>
               <div style={{ background: '#eff6ff', borderRadius: '8px', padding: '.75rem 1rem', fontSize: '.85rem', color: '#1d4ed8', marginBottom: '1rem' }}>

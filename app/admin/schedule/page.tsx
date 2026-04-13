@@ -18,6 +18,7 @@ export default function AdminSchedulePage() {
   const [showCreate, setShowCreate] = useState(false)
   const [newEvent, setNewEvent] = useState({ title: '', start: '', type: 'General' })
   const [selected, setSelected] = useState(null)
+  const [currentDate, setCurrentDate] = useState(new Date())
 
   const load = async () => {
     setLoading(true)
@@ -68,7 +69,6 @@ export default function AdminSchedulePage() {
     <>
       <div className="topbar">
         <h2>📅 Schedule / Calendar</h2>
-        <button className="btn btn-primary btn-sm" onClick={() => setShowCreate(true)}>+ New Event</button>
       </div>
       <div className="page-body">
         <div className="card">
@@ -79,9 +79,11 @@ export default function AdminSchedulePage() {
                   <Calendar
                     localizer={localizer}
                     events={events}
+                    date={currentDate}
+                    onNavigate={newDate => setCurrentDate(newDate)}
                     startAccessor="start"
                     endAccessor={e => new Date(e.start.getTime() + 30 * 60000)}
-                    views={['month', 'week', 'day']}
+                    views={['week']}
                     defaultView="week"
                     draggableAccessor={() => true}
                     onEventDrop={handleEventDrop}
