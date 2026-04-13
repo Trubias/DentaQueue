@@ -21,7 +21,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: listError.message }, { status: 500 })
     }
 
-    const user = users.find(u => u.email?.toLowerCase() === email.toLowerCase())
+    const user = (users as any[]).find(u => u?.email?.toLowerCase() === email.toLowerCase())
 
     if (user) {
       const { error: deleteError } = await adminClient.auth.admin.deleteUser(user.id)
