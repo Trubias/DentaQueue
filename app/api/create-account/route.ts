@@ -18,7 +18,7 @@ export async function POST(request: Request) {
     const { data: listData, error: listError } = await adminClient.auth.admin.listUsers()
     
     // Check if user already exists in auth
-    const existingUser = listData?.users.find(u => u.email === email)
+    const existingUser = listData?.users.find((u: any) => u.email === email)
 
     if (existingUser) {
       // Force confirm the existing user to get them unstuck!
