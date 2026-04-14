@@ -12,12 +12,16 @@ export default function ClientDashboard() {
   const [position, setPosition] = useState(null)
   const [appointments, setAppointments] = useState([])
   const [announcements, setAnnouncements] = useState([])
-  const [unread, setUnread] = useState(0)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     async function load() {
-      const { data: { user: u } } = await supabase.auth.getUser()
+      // Use getSession() instead of getUser() to avoid the IndexedDB auth token
+      // lock conflict that occurs when multiple concurrent requests all call getUser()
+      // simultaneously (layout + page components). getSession() reads from local
+      // cache and never acquires the distributed lock.
+      const { data: { session } } = await supabase.auth.getSession()
+      const u = session?.user
       if (!u) return
       setUser(u)
 
@@ -47,18 +51,15 @@ export default function ClientDashboard() {
         setPosition(count ?? 1)
       }
 
-      // Notifications — include user-specific AND broadcasts (user_id IS NULL)
+      // Latest notifications — personal only (user_id = u.id) with sent_at set
+      // This matches exactly what the notifications page and sidebar badge count show
       const { data: ann } = await supabase.from('announcements')
         .select('*')
-        .or(`user_id.eq.${u.id},user_id.is.null`)
+        .eq('user_id', u.id)
         .not('sent_at', 'is', null)
         .order('sent_at', { ascending: false }).limit(3)
       setAnnouncements(ann ?? [])
-      const { count: unreadCount } = await supabase.from('announcements')
-        .select('id', { count: 'exact' })
-        .or(`user_id.eq.${u.id},user_id.is.null`)
-        .eq('read', false)
-      setUnread(unreadCount ?? 0)
+
 
       setLoading(false)
     }
@@ -156,7 +157,7 @@ export default function ClientDashboard() {
           {/* Notifications */}
           <div className="card">
             <div className="card-header">
-              <h3>🔔 Notifications {unread > 0 && <span style={{ background: '#ef4444', color: '#fff', borderRadius: '20px', fontSize: '.7rem', padding: '1px 8px', marginLeft: '.5rem' }}>{unread}</span>}</h3>
+              <h3>🔔 Notifications</h3>
               <Link href="/client/notifications" className="btn btn-outline btn-sm">View All</Link>
             </div>
             <div className="card-body">
@@ -164,7 +165,7 @@ export default function ClientDashboard() {
                 ? <div style={{ color: 'var(--text-muted)' }}>No notifications yet.</div>
                 : announcements.map(a => (
                     <div key={a.id} style={{ padding: '.75rem 0', borderBottom: '1px solid var(--border)' }}>
-                      <div style={{ fontWeight: 600, fontSize: '.9rem' }}>{a.title}</div>
+                      <div style={{ fontWeight: a.read ? 400 : 700, fontSize: '.9rem' }}>{a.title}</div>
                       <div style={{ color: 'var(--text-muted)', fontSize: '.8rem', marginTop: '.2rem' }}>{a.body?.substring(0, 80)}…</div>
                       <div style={{ fontSize: '.75rem', color: 'var(--text-muted)', marginTop: '.25rem' }}>{new Date(a.sent_at).toLocaleString()}</div>
                     </div>

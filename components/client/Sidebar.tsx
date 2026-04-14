@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import supabase from '@/lib/supabaseClient'
@@ -17,6 +17,29 @@ export default function ClientSidebar({ profile, unreadCount = 0 }: any) {
   const pathname = usePathname()
   const router = useRouter()
   const [isOpen, setIsOpen] = useState(false)
+  const [badge, setBadge] = useState(unreadCount)
+
+  // Keep badge perfectly in sync with server layout props
+  useEffect(() => {
+    setBadge(unreadCount)
+  }, [unreadCount])
+
+  // Initial client side fetch just to be perfectly sure it's accurate on first mount
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      const uid = session?.user?.id
+      if (!uid) return
+      supabase
+        .from('announcements')
+        .select('id', { count: 'exact' })
+        .eq('user_id', uid)
+        .eq('read', false)
+        .not('sent_at', 'is', null)
+        .then(({ count }) => {
+          setBadge(count ?? 0)
+        })
+    })
+  }, [])
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
@@ -53,11 +76,11 @@ export default function ClientSidebar({ profile, unreadCount = 0 }: any) {
             >
               <span className="nav-icon">{item.icon}</span>
               {item.label}
-              {item.href === '/client/notifications' && unreadCount > 0 && (
+              {item.href === '/client/notifications' && badge > 0 && (
                 <span style={{
                   marginLeft: 'auto', background: '#ef4444', color: '#fff',
                   borderRadius: '20px', fontSize: '.7rem', padding: '1px 7px', fontWeight: 700
-                }}>{unreadCount}</span>
+                }}>{badge}</span>
               )}
             </Link>
           ))}

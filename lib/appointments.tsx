@@ -92,12 +92,13 @@ export async function getDashboardStats() {
   }
 }
 
-// Get calendar events (all with scheduled_at)
+// Get calendar events (all with scheduled_at and not cancelled)
 export async function getCalendarEvents() {
   const { data, error } = await supabase
     .from('appointments')
-    .select('id, fullname, scheduled_at, status, type')
+    .select('id, user_id, fullname, scheduled_at, status, type')
     .not('scheduled_at', 'is', null)
+    .neq('status', 'cancelled')
   if (error) throw error
   return data.map(a => ({
     id: a.id,

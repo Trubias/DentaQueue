@@ -6,6 +6,7 @@ import { format, parse, startOfWeek, getDay } from 'date-fns'
 import { enUS } from 'date-fns/locale'
 import 'react-big-calendar/lib/css/react-big-calendar.css'
 import { getCalendarEvents, updateAppointment, deleteAppointment } from '@/lib/appointments'
+import { createAnnouncement } from '@/lib/announcements'
 import supabase from '@/lib/supabaseClient'
 import toast from 'react-hot-toast'
 
@@ -19,6 +20,7 @@ export default function AdminSchedulePage() {
   const [newEvent, setNewEvent] = useState({ title: '', start: '', type: 'General' })
   const [selected, setSelected] = useState(null)
   const [currentDate, setCurrentDate] = useState(new Date())
+  const [currentView, setCurrentView] = useState('month')
 
   const load = async () => {
     setLoading(true)
@@ -59,9 +61,32 @@ export default function AdminSchedulePage() {
 
   const handleDeleteEvent = async () => {
     if (!selected) return
+    const appt = selected.resource
     try {
-      await updateAppointment(selected.resource.id, { status: 'cancelled' })
-      toast.success('Event cancelled'); setSelected(null); load()
+      await updateAppointment(appt.id, { status: 'cancelled' })
+
+      // Send in-app notification to the patient if they have an account
+      if (appt.user_id) {
+        const scheduledLabel = appt.scheduled_at
+          ? new Date(appt.scheduled_at).toLocaleString('en-PH', {
+              weekday: 'long', year: 'numeric', month: 'long',
+              day: 'numeric', hour: '2-digit', minute: '2-digit',
+            })
+          : 'a previously scheduled time'
+
+        await createAnnouncement({
+          user_id: appt.user_id,
+          appointment_id: appt.id,
+          title: '❌ Appointment Cancelled',
+          body: `Dear ${appt.fullname}, your ${appt.type} appointment scheduled for ${scheduledLabel} (Appointment #${String(appt.id).padStart(3, '0')}) has been cancelled by the clinic. Please book a new appointment or contact us for more information.`,
+          sent_at: new Date().toISOString(),
+          read: false,
+        })
+      }
+
+      toast.success('Appointment cancelled & patient notified.')
+      setSelected(null)
+      load()
     } catch (e) { toast.error(e.message) }
   }
 
@@ -83,8 +108,9 @@ export default function AdminSchedulePage() {
                     onNavigate={newDate => setCurrentDate(newDate)}
                     startAccessor="start"
                     endAccessor={e => new Date(e.start.getTime() + 30 * 60000)}
-                    views={['week']}
-                    defaultView="week"
+                    views={['month', 'week', 'day']}
+                    view={currentView}
+                    onView={newView => setCurrentView(newView)}
                     draggableAccessor={() => true}
                     onEventDrop={handleEventDrop}
                     onSelectEvent={e => setSelected(e)}
@@ -144,7 +170,9 @@ export default function AdminSchedulePage() {
             <p><strong>Status:</strong> <span className={`badge badge-${selected.resource?.status}`}>{selected.resource?.status}</span></p>
             <p><strong>Scheduled:</strong> {new Date(selected.start).toLocaleString()}</p>
             <div className="actions-row" style={{ marginTop: '1.5rem' }}>
-              <button className="btn btn-danger" onClick={handleDeleteEvent}>Cancel Appointment</button>
+              {selected.resource?.status !== 'completed' && (
+                <button className="btn btn-danger" onClick={handleDeleteEvent}>Cancel Appointment</button>
+              )}
               <button className="btn btn-outline" onClick={() => setSelected(null)}>Close</button>
             </div>
           </div>

@@ -20,11 +20,14 @@ export default async function ClientLayout({ children }) {
     redirect('/admin/dashboard')
   }
 
+
+
   const { count: unreadCount } = await supabase
     .from('announcements')
     .select('id', { count: 'exact' })
     .eq('user_id', user.id)
     .eq('read', false)
+    .not('sent_at', 'is', null)
 
   return (
     <div className="dashboard-layout">

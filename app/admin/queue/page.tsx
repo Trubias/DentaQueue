@@ -1,6 +1,7 @@
 'use client'
 export const dynamic = 'force-dynamic'
 import { useEffect, useState } from 'react'
+import supabase from '@/lib/supabaseClient'
 import { getAllAppointments, updateAppointment, deleteAppointment } from '@/lib/appointments'
 import { createAnnouncement } from '@/lib/announcements'
 import toast from 'react-hot-toast'
@@ -50,12 +51,54 @@ export default function AdminQueuePage() {
 
   useEffect(() => { load() }, [showAll])
 
+  const [conflictWarning, setConflictWarning] = useState(false)
+
+  useEffect(() => {
+    async function checkConflict() {
+      if (!scheduledAt) {
+        setConflictWarning(false)
+        return
+      }
+      const localDate = new Date(scheduledAt)
+      const tzOffsetMs = localDate.getTimezoneOffset() * 60000
+      const localISO = new Date(localDate.getTime() - tzOffsetMs).toISOString().slice(0, 19)
+      const tzSign = localDate.getTimezoneOffset() <= 0 ? '+' : '-'
+      const tzAbs = Math.abs(localDate.getTimezoneOffset())
+      const tzHH = String(Math.floor(tzAbs / 60)).padStart(2, '0')
+      const tzMM = String(tzAbs % 60).padStart(2, '0')
+      const scheduledAtWithTZ = `${localISO}${tzSign}${tzHH}:${tzMM}`
+
+      const { data } = await supabase
+        .from('appointments')
+        .select('id')
+        .eq('scheduled_at', scheduledAtWithTZ)
+        .in('status', ['assigned', 'completed'])
+        .limit(1)
+
+      setConflictWarning(!!data && data.length > 0)
+    }
+    const timer = setTimeout(checkConflict, 300)
+    return () => clearTimeout(timer)
+  }, [scheduledAt])
+
   const handleAssign = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!scheduledAt || !assigning) return
+    if (!scheduledAt || !assigning || conflictWarning) return
     const appt = assigning
     try {
-      await updateAppointment(appt.id, { status: 'assigned', scheduled_at: scheduledAt })
+      // Convert the local datetime-local string (e.g. "2026-04-14T17:39") to a
+    // timezone-aware ISO string (e.g. "2026-04-14T17:39:00+08:00") so that
+    // Postgres stores the correct UTC moment and the calendar always shows
+    // exactly the date/time the admin selected — no timezone shift.
+    const localDate = new Date(scheduledAt)
+    const tzOffsetMs = localDate.getTimezoneOffset() * 60000
+    const localISO = new Date(localDate.getTime() - tzOffsetMs).toISOString().slice(0, 19)
+    const tzSign = localDate.getTimezoneOffset() <= 0 ? '+' : '-'
+    const tzAbs = Math.abs(localDate.getTimezoneOffset())
+    const tzHH = String(Math.floor(tzAbs / 60)).padStart(2, '0')
+    const tzMM = String(tzAbs % 60).padStart(2, '0')
+    const scheduledAtWithTZ = `${localISO}${tzSign}${tzHH}:${tzMM}`
+    await updateAppointment(appt.id, { status: 'assigned', scheduled_at: scheduledAtWithTZ })
 
       // Create in-app notification for the patient
       if (appt.user_id) {
@@ -94,9 +137,9 @@ export default function AdminQueuePage() {
                     <p>Dear <strong>${appt.fullname}</strong>,</p>
                     <p>Your appointment has been confirmed! Here are the details:</p>
                     <div style="background:#f1f5f9;border-radius:8px;padding:1rem;margin:1rem 0">
-                      <p style="margin:.3rem 0">📋 <strong>Service:</strong> ${appt.type}</p>
-                      <p style="margin:.3rem 0">📅 <strong>Schedule:</strong> ${new Date(scheduledAt).toLocaleString('en-PH', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
-                      <p style="margin:.3rem 0">🪪 <strong>Appointment #:</strong> ${String(appt.id).padStart(3, '0')}</p>
+                       <p style="margin:.3rem 0">📋 <strong>Service:</strong> ${appt.type}</p>
+                       <p style="margin:.3rem 0">📅 <strong>Schedule:</strong> ${new Date(scheduledAt).toLocaleString('en-PH', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+                       <p style="margin:.3rem 0">🪪 <strong>Appointment #:</strong> ${String(appt.id).padStart(3, '0')}</p>
                     </div>
                     <p style="color:#64748b;font-size:.875rem">Please arrive at least 10 minutes before your scheduled time. If you need to reschedule, please contact us or cancel via the Patient Portal.</p>
                     <p>Thank you for choosing DentaQueue Clinic!</p>
@@ -281,12 +324,23 @@ export default function AdminQueuePage() {
                   required
                   min={new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0] + 'T00:00'}
                 />
+                {conflictWarning && (
+                  <div style={{ marginTop: '0.75rem', fontSize: '.85rem', color: '#dc2626', background: '#fef2f2', padding: '.75rem', borderRadius: '6px', border: '1px solid #fecaca', display: 'flex', gap: '.5rem', alignItems: 'flex-start' }}>
+                    <span style={{ fontSize: '1rem' }}>⚠️</span>
+                    <div>
+                      <strong>Time Slot Conflict!</strong><br />
+                      This exact time slot on this date is already occupied or has already been served by another appointment. You must choose a different date or time before you can proceed.
+                    </div>
+                  </div>
+                )}
               </div>
               <div style={{ background: '#eff6ff', borderRadius: '8px', padding: '.75rem 1rem', fontSize: '.85rem', color: '#1d4ed8', marginBottom: '1rem' }}>
                 📧 A confirmation email and in-app notification will be sent to the patient automatically.
               </div>
               <div className="actions-row">
-                <button type="submit" className="btn btn-primary">✅ Confirm Assignment</button>
+                <button type="submit" className="btn btn-primary" disabled={conflictWarning}>
+                  ✅ Confirm Assignment
+                </button>
                 <button type="button" className="btn btn-outline" onClick={() => setAssigning(null)}>Cancel</button>
               </div>
             </form>

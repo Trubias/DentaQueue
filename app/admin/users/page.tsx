@@ -74,14 +74,29 @@ export default function AdminUsersPage() {
       .from('appointments')
       .select('*')
       .eq('user_id', user.id)
+      .neq('status', 'cancelled')
       .order('created_at', { ascending: false })
     setUserAppts(data ?? [])
   }
 
-  const markDone = async (apptId: number) => {
-    await supabase.from('appointments').update({ status: 'completed' }).eq('id', apptId)
-    setUserAppts(a => a.map(x => x.id === apptId ? { ...x, status: 'completed' } : x))
-    toast.success('Marked as done.')
+  const markDone = async (appt: Appointment) => {
+    await supabase.from('appointments').update({ status: 'completed' }).eq('id', appt.id)
+    setUserAppts(a => a.map(x => x.id === appt.id ? { ...x, status: 'completed' } : x))
+    
+    if (viewUser?.id) {
+      const scheduledStr = appt.scheduled_at 
+        ? new Date(appt.scheduled_at).toLocaleString('en-US', { dateStyle: 'full', timeStyle: 'short' }) 
+        : 'an open date'
+      await supabase.from('announcements').insert({
+        user_id: viewUser.id,
+        title: '✅ Appointment Completed',
+        body: `Dear ${viewUser.name}, your ${appt.type} appointment scheduled for ${scheduledStr} has been successfully completed!`,
+        sent_at: new Date().toISOString(),
+        read: false
+      })
+    }
+    
+    toast.success('Marked as completed & patient notified.')
   }
 
   const statusBadge = (s: string) => <span className={`badge badge-${s}`}>{s}</span>
@@ -185,8 +200,8 @@ export default function AdminUsersPage() {
                         <td>{statusBadge(a.status)}</td>
                         <td style={{ fontSize: '.8rem' }}>{a.scheduled_at ? new Date(a.scheduled_at).toLocaleString() : '—'}</td>
                         <td>
-                          {!['completed', 'cancelled'].includes(a.status) && (
-                            <button className="btn btn-success btn-sm" onClick={() => markDone(a.id)}>✅ Done</button>
+                          {a.status === 'assigned' && (
+                            <button className="btn btn-success btn-sm" onClick={() => markDone(a)}>✅ Done</button>
                           )}
                         </td>
                       </tr>
